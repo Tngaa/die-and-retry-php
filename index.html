@@ -1,0 +1,245 @@
+<html>
+
+<head>
+    <title>Die and retry</title>
+
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- jQuery requis pour Bootsrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+
+    <!-- Popper JS requis pour Bootsrap -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <!-- Vue JS : composants, directives, binding -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+
+    <!-- Axios JS : requêtes AJAX -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div id="main">
+
+        <!-- Message d'erreur (si il existe) -->
+        <div v-if="errorMessage.length > 0" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>{{errorMessage}}</strong>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+
+        <!-- Message de succes (si il existe) -->
+        <div v-if="successMessage.length > 0" class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>{{successMessage}}</strong>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+
+        <!-- Boîte de dialogue de confirmation -->
+        <div id="confirmation" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+
+                    <!-- Titre -->
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{confirmModalTitle}}</h5>
+                    </div>
+
+                    <!-- Contenu -->
+                    <div class="modal-body">
+                        {{confirmModalQuestion}}
+                    </div>
+
+                    <!-- Action -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Non</button>
+                        <button id="confirmation-yes" type="button" class="btn btn-success" data-dismiss="modal">Je confirme</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Boîte de dialogue de création ou de modification d'un jeu vidéo  -->
+        <div id="create-videogame" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+
+                    <!-- Titre -->
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{videogameTitle}}</h5>
+                    </div>
+
+                    <!-- Contenu -->
+                    <div class="modal-body">
+                        <div class="d-flex flex-column">
+
+                            <!-- Input de titre -->
+                            <div class="form-group">
+                                <label for="input-title">Titre</label>
+                                <input type="text" name="title" maxlength="255" id="input-title" class="form-control" v-model="videogameToCreateOrUpdate.title">
+                            </div>
+
+                            <!-- Input de date de sortie -->
+                            <div class="form-group">
+                                <label for="input-releasedate">Date de sortie</label>
+                                <input type="text" name="username" maxlength="63" id="input-releasedate" class="form-control" v-model="videogameToCreateOrUpdate.releaseDate">
+                            </div>
+
+                            <!-- Sélecteur de plateforme -->
+                            <div class="form-group d-flex flex-column">
+                                <label>Plateforme</label>
+                                <select v-model="videogameToCreateOrUpdate.idPlatform" class="border">
+                                    <option v-for="platform in platforms" v-bind:value="platform.id">
+                                        {{ platform.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Sélecteur d'éditeur -->
+                            <div class="form-group d-flex flex-column">
+                                <label>Éditeur</label>
+                                <select v-model="videogameToCreateOrUpdate.idPublisher" class="border">
+                                    <option v-for="publisher in publishers" v-bind:value="publisher.id">
+                                        {{ publisher.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Sélecteur de développeur -->
+                            <div class="form-group d-flex flex-column">
+                                <label>Développeur</label>
+                                <select v-model="videogameToCreateOrUpdate.idDeveloper" class="border">
+                                    <option v-for="developer in developers" v-bind:value="developer.id">
+                                        {{ developer.name }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Annuler</button>
+                        <button id="create-videogame-yes" type="button" class="btn btn-success" data-dismiss="modal" v-on:click="saveVideogame()">Confimer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Formulaire de login -->
+        <div v-if="!isConnected" id="login" class="d-flex flex-column">
+
+            <!-- Titre de l'application -->
+            <h2 class="text-primary text-center">DIE AND RETRY</h2>
+
+            <!-- Input d'identifiant -->
+            <div class="form-group">
+                <label for="input-username">Identifiant</label>
+                <input type="text" name="username" id="input-username" class="form-control" v-model="username">
+            </div>
+
+            <!-- Input de mot de passe -->
+            <div class="form-group">
+                <label for="input-password">Mot de passe</label>
+                <input type="password" name="password" id="input-password" class="form-control" v-model="password" v-on:keyup.enter="connect()">
+            </div>
+
+            <!-- Bouton de connexion -->
+            <button class="btn btn-primary" v-on:click="connect()" v-bind:disabled="isConnectable()">Se connecter</button>
+        </div>
+
+
+        <!-- Liste des jeux affichés uniquement si l'utilisateur est bien connecté -->
+        <div v-else id="videogames" class="m-3">
+
+            <!-- Bouton de déconnexion -->
+            <div class="text-right">
+                <button type="button" class="btn btn-outline-primary" v-on:click="disconnect()">Déconnexion</button>
+            </div>
+
+            <!-- Section utilitaire -->
+            <div class="d-flex flex-row flex-wrap justify-content-between align-items-center mt-5">
+
+                <!-- Bouton de création d'un jeu vidéo -->
+                <!-- le div permet d'éviter d'agrandir le bouton à cause de flex -->
+                <div>
+                    <button type="button" class="btn btn-primary" v-on:click="onCreateVideogame()">Créer un jeu vidéo</button>
+                </div>
+
+                <!-- Filtre -->
+                <div id="filter" class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Filtre</span>
+                    </div>
+                    <input type="text" class="form-control" placeholder="Example: Sega" v-model="filteringValue" v-on:keyup="onChangeFilter()">
+                </div>
+
+                <!-- Bouton de rafraîchissement de la liste des jeux vidéos -->
+                <!-- le div permet d'éviter d'agrandir le bouton de flex -->
+                <div>
+                    <button type="button" class="btn btn-light" v-on:click="getVideogames()">Rafraîchir</button>
+                </div>
+            </div>
+
+
+            <!-- Tableau contenant les jeux vidéos -->
+            <table class="table table-striped table-hover border mt-3">
+
+                <!-- En-têtes -->
+                <thead>
+                    <tr class="text-primary">
+                        <th scope="col" class="text-center">#</th>
+                        <th scope="col" class="text-center">Titre</th>
+                        <th scope="col" class="text-center text-nowrap">Date de sortie</th>
+                        <th scope="col" class="text-center">Plateforme</th>
+                        <th scope="col" class="text-center">Éditeur</th>
+                        <th scope="col" class="text-center">Développeur</th>
+                        <th scope="col" class="text-center">Action</th>
+                    </tr>
+                </thead>
+
+                <!-- Jeux videos -->
+                <tbody>
+                    <tr v-for="(videogame, index) in videogames">
+
+                        <!-- index commence ici à 0 donc on ajoute +1 -->
+                        <th scope="row" class="align-middle">{{index + 1}}</th>
+                        <td class="align-middle">{{videogame.title}}</td>
+                        <td class="align-middle">{{videogame.releaseDate}}</td>
+                        <td class="align-middle">{{videogame.platformName}}</td>
+                        <td class="align-middle">{{videogame.publisherName}}</td>
+                        <td class="align-middle">{{videogame.developerName}}</td>
+                        <td class="align-middle text-nowrap">
+
+                            <!-- Bouton de suppression d'un jeu vidéo  -->
+                            <button type="button" class="btn btn-outline-secondary btn-sm mr-3" v-on:click="onDeleteVideogame(videogame)">Suppimer</button>
+
+                            <!-- Bouton de modification d'un jeu vidéo  -->
+                            <button type="button" class="btn btn-outline-primary btn-sm" v-on:click="onModifyVideogame(videogame)">Modifier</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+<!-- Custom JS -->
+<script src="main.js"></script>
+
+</html>

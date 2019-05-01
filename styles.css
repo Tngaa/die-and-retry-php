@@ -1,0 +1,15 @@
+#login {
+
+    /* Centrage du formulaire de login */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    /* Ajustement de la dimension */
+    width: 30em;
+}
+
+#filter {
+    max-width: 20em;
+}
